@@ -5,7 +5,9 @@
   "main": "main.js",
   "scripts": {
     "start": "electron .",
-    "build": "electron-builder --mac"
+    "build": "electron-builder --mac",
+    "checklist": "bash scripts/pre-release-checklist.sh",
+    "release": "bash scripts/release.sh"
   },
   "devDependencies": {
     "electron": "^33.0.0",
