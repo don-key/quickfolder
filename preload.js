@@ -10,6 +10,8 @@ contextBridge.exposeInMainWorld('api', {
   togglePin: () => ipcRenderer.invoke('toggle-pin'),
   getPinned: () => ipcRenderer.invoke('get-pinned'),
   openSettings: () => ipcRenderer.invoke('open-settings'),
+  searchFolders: (query) => ipcRenderer.invoke('search-folders', query),
+  setSearchMode: (active) => ipcRenderer.invoke('set-search-mode', active),
   openGithub: () => ipcRenderer.invoke('open-github'),
   getVersion: () => ipcRenderer.invoke('get-version'),
   showFolderMenu: (index) => ipcRenderer.invoke('show-folder-menu', index),

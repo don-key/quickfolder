@@ -58,8 +58,21 @@
       </button>
     </div>
 
+    <!-- Search -->
+    <div class="search-bar">
+      <svg class="search-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35" stroke-linecap="round"/>
+      </svg>
+      <input type="text" id="search-input" placeholder="폴더 검색..." spellcheck="false">
+      <button class="search-clear" id="search-clear" style="display:none" title="초기화">&times;</button>
+      <span class="search-hint" id="search-hint"></span>
+    </div>
+
     <!-- Folder List -->
     <div class="folder-list" id="folder-list"></div>
+
+    <!-- Search Results -->
+    <div class="search-results" id="search-results" style="display:none"></div>
 
     <!-- Workspace Edit Modal -->
     <div class="modal-overlay" id="modal-overlay">

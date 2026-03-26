@@ -295,10 +295,116 @@ addFolderBtn.addEventListener('click', async () => {
   if (paths.length > 0) addFolders(paths);
 });
 
+// Search
+const searchInput = document.getElementById('search-input');
+const searchResults = document.getElementById('search-results');
+const searchHint = document.getElementById('search-hint');
+const searchClear = document.getElementById('search-clear');
+let searchTimeout = null;
+
+searchClear.addEventListener('click', () => exitSearch());
+
+searchInput.addEventListener('input', () => {
+  const query = searchInput.value.trim();
+  if (searchTimeout) clearTimeout(searchTimeout);
+
+  if (!query) {
+    exitSearch();
+    return;
+  }
+  searchClear.style.display = '';
+  window.api.setSearchMode(true);
+
+  // 등록된 폴더 필터링 (즉시)
+  const ws = activeWs();
+  const registered = ws ? ws.folders.filter(f =>
+    f.name.toLowerCase().includes(query.toLowerCase())
+  ) : [];
+
+  if (query.length < 2) {
+    showSearchResults(registered, []);
+    return;
+  }
+
+  // 시스템 검색 (디바운스 300ms)
+  showSearchResults(registered, [], true);
+  searchTimeout = setTimeout(async () => {
+    const systemResults = await window.api.searchFolders(query);
+    // 등록된 폴더 경로 제외
+    const registeredPaths = new Set((ws ? ws.folders : []).map(f => f.path));
+    const filtered = systemResults.filter(r => !registeredPaths.has(r.path));
+    showSearchResults(registered, filtered);
+  }, 300);
+});
+
+function showSearchResults(registered, system, loading = false) {
+  folderList.style.display = 'none';
+  searchResults.style.display = 'block';
+  searchHint.textContent = loading ? '검색 중...' : `${registered.length + system.length}건`;
+
+  let html = '';
+
+  if (registered.length > 0) {
+    html += '<div class="search-section-title">등록된 폴더</div>';
+    html += registered.map(f => {
+      const idx = activeWs().folders.indexOf(f);
+      return `<div class="search-item" onclick="openFolder('${f.path.replace(/'/g, "\\'")}')"
+                   oncontextmenu="showContextMenu(event, ${idx})">
+        <svg class="search-item-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+          <path d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"/>
+        </svg>
+        <span class="search-item-name">${escapeHtml(f.name)}</span>
+        <span class="search-item-path">${escapeHtml(f.path.replace(/^\/Users\/[^/]+/, '~'))}</span>
+      </div>`;
+    }).join('');
+  }
+
+  if (system.length > 0) {
+    html += '<div class="search-section-title">시스템 검색</div>';
+    html += system.map(r => `
+      <div class="search-item search-item-system">
+        <button class="search-add-btn" onclick="event.stopPropagation(); addFromSearch(event, '${r.path.replace(/'/g, "\\'")}')" title="워크스페이스에 추가">+</button>
+        <svg class="search-item-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" onclick="openFolder('${r.path.replace(/'/g, "\\'")}')" style="cursor:pointer">
+          <path d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"/>
+        </svg>
+        <span class="search-item-name" onclick="openFolder('${r.path.replace(/'/g, "\\'")}')" style="cursor:pointer;flex:1">${escapeHtml(r.name)}</span>
+        <span class="search-item-path">${escapeHtml(r.path.replace(/^\/Users\/[^/]+/, '~'))}</span>
+      </div>
+    `).join('');
+  }
+
+  if (registered.length === 0 && system.length === 0 && !loading) {
+    html = '<div class="empty-hint">결과 없음</div>';
+  }
+
+  searchResults.innerHTML = html;
+}
+
+function exitSearch() {
+  searchInput.value = '';
+  searchHint.textContent = '';
+  searchClear.style.display = 'none';
+  searchResults.style.display = 'none';
+  searchResults.innerHTML = '';
+  folderList.style.display = '';
+  window.api.setSearchMode(false);
+}
+
+// 시스템 검색 결과 우클릭 → 워크스페이스에 추가
+window.addFromSearch = async (e, folderPath) => {
+  if (e) { e.preventDefault(); e.stopPropagation(); }
+  await addFolders([folderPath]);
+  searchInput.dispatchEvent(new Event('input'));
+};
+
 // Keyboard shortcut
 document.addEventListener('keydown', (e) => {
   if (e.key === 'Escape') {
-    hideModal();
+    if (searchInput.value) {
+      exitSearch();
+    } else {
+      hideModal();
+    }
   }
 });
 

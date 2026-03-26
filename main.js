@@ -214,11 +214,10 @@ function createTray() {
 // ── Window ──
 function createWindow() {
   mainWindow = new BrowserWindow({
-    width: 480,
-    height: 200,
-    minWidth: 360,
-    minHeight: 150,
-    maxHeight: 250,
+    width: loadData().windowWidth || 480,
+    height: loadData().windowHeight || 230,
+    minWidth: 280,
+    minHeight: 120,
     type: 'panel',
     titleBarStyle: 'hiddenInset',
     backgroundColor: '#0d1117',
@@ -237,6 +236,18 @@ function createWindow() {
   mainWindow.loadFile('index.html');
 
   // ── 드래그 중 auto-hide 방지 ──
+  let resizeSaveTimer = null;
+  mainWindow.on('resize', () => {
+    if (resizeSaveTimer) clearTimeout(resizeSaveTimer);
+    resizeSaveTimer = setTimeout(() => {
+      const bounds = mainWindow.getBounds();
+      const d = loadData();
+      d.windowWidth = bounds.width;
+      d.windowHeight = bounds.height;
+      saveData(d);
+    }, 500);
+  });
+
   mainWindow.on('will-move', () => {
     isDragging = true;
     if (dragEndTimer) clearTimeout(dragEndTimer);
@@ -387,6 +398,33 @@ ipcMain.handle('show-ws-menu', (_, wsId) => {
     { label: '삭제', click: () => mainWindow.webContents.send('ws-action', { action: 'delete', wsId }) }
   ]);
   menu.popup({ window: mainWindow });
+});
+
+ipcMain.handle('set-search-mode', (_, active) => {
+  if (!mainWindow) return;
+  const bounds = mainWindow.getBounds();
+  const savedHeight = loadData().windowHeight || 230;
+  if (active) {
+    mainWindow.setBounds({ x: bounds.x, y: bounds.y, width: bounds.width, height: Math.max(400, savedHeight) });
+  } else {
+    mainWindow.setBounds({ x: bounds.x, y: bounds.y, width: bounds.width, height: savedHeight });
+  }
+});
+
+ipcMain.handle('search-folders', (_, query) => {
+  return new Promise((resolve) => {
+    if (!query || query.trim().length < 2) return resolve([]);
+    const escaped = query.replace(/"/g, '\\"');
+    const cmd = `mdfind "kMDItemContentType == public.folder && kMDItemDisplayName == '*${escaped}*'" | head -20`;
+    require('child_process').exec(cmd, { timeout: 3000 }, (err, stdout) => {
+      if (err) return resolve([]);
+      const results = stdout.trim().split('\n').filter(Boolean).map(p => ({
+        path: p,
+        name: p.split('/').pop()
+      }));
+      resolve(results);
+    });
+  });
 });
 
 ipcMain.handle('get-version', () => ({
