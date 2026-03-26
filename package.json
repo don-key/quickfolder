@@ -1,6 +1,6 @@
 {
   "name": "quickfolder",
-  "version": "1.1.0",
+  "version": "1.1.1",
   "description": "macOS 폴더 관리 유틸리티 - 빠른 폴더 접근",
   "main": "main.js",
   "scripts": {
