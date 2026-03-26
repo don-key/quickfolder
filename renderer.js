@@ -40,6 +40,9 @@ function escapeHtml(str) {
 function render() {
   renderWorkspaceTabs();
   renderFolderList();
+  if (searchInput.value.trim()) {
+    searchInput.dispatchEvent(new Event('input'));
+  }
 }
 
 function renderWorkspaceTabs() {
