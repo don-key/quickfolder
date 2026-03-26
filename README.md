@@ -10,6 +10,7 @@
 
 <p align="center">
   <a href="https://github.com/don-key/quickfolder/releases/latest"><img src="https://img.shields.io/github/v/release/don-key/quickfolder?style=flat-square&label=download" alt="Download"></a>
+  <img src="https://img.shields.io/github/downloads/don-key/quickfolder/total?style=flat-square&label=downloads" alt="Downloads">
   <img src="https://img.shields.io/badge/platform-macOS-blue?style=flat-square" alt="macOS">
   <img src="https://img.shields.io/badge/electron-33-47848F?style=flat-square&logo=electron" alt="Electron">
   <img src="https://img.shields.io/badge/license-MIT-green?style=flat-square" alt="MIT License">
