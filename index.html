@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>QuickFolder</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="titlebar" id="drag-region"></div>
+
+  <div class="app">
+    <!-- Header -->
+    <header class="header">
+      <div class="header-row">
+        <h1>QuickFolder</h1>
+        <div class="header-actions">
+          <button class="btn-icon" id="btn-pin" title="고정 (마우스 이탈 시 안 닫힘)">
+            <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor" class="pin-icon">
+              <path d="M4.456.734a1.75 1.75 0 012.826.504l.613 1.327a3.08 3.08 0 002.084 1.707l2.454.584c1.332.317 1.8 1.972.832 2.94L11.06 10l3.72 3.72a.75.75 0 11-1.06 1.06L10 11.06l-2.204 2.205c-.968.968-2.623.5-2.94-.832l-.584-2.454a3.08 3.08 0 00-1.707-2.084l-1.327-.613a1.75 1.75 0 01-.504-2.826L4.456.734z"/>
+            </svg>
+          </button>
+          <button class="btn-icon" id="btn-add-folder" title="폴더 추가">
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
+              <path d="M8 2a.75.75 0 01.75.75v4.5h4.5a.75.75 0 010 1.5h-4.5v4.5a.75.75 0 01-1.5 0v-4.5h-4.5a.75.75 0 010-1.5h4.5v-4.5A.75.75 0 018 2z"/>
+            </svg>
+          </button>
+        </div>
+      </div>
+      <p class="subtitle">폴더를 한 곳에서 관리하세요</p>
+    </header>
+
+    <!-- Workspace Tabs -->
+    <div class="workspace-bar">
+      <div class="workspace-tabs" id="workspace-tabs"></div>
+      <button class="btn-icon" id="add-workspace" title="새 워크스페이스">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
+          <path d="M8 2a.75.75 0 01.75.75v4.5h4.5a.75.75 0 010 1.5h-4.5v4.5a.75.75 0 01-1.5 0v-4.5h-4.5a.75.75 0 010-1.5h4.5v-4.5A.75.75 0 018 2z"/>
+        </svg>
+      </button>
+    </div>
+
+    <!-- Folder List -->
+    <div class="folder-list" id="folder-list"></div>
+
+    <!-- Workspace Edit Modal -->
+    <div class="modal-overlay" id="modal-overlay">
+      <div class="modal">
+        <h3 id="modal-title">워크스페이스 이름</h3>
+        <input type="text" id="modal-input" placeholder="워크스페이스 이름" maxlength="20">
+        <div class="modal-actions">
+          <button class="btn-secondary" id="modal-cancel">취소</button>
+          <button class="btn-primary" id="modal-confirm">확인</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Context Menu -->
+    <div class="context-menu" id="context-menu">
+      <button data-action="open">Finder에서 열기</button>
+      <button data-action="terminal">터미널에서 열기</button>
+      <div class="context-divider"></div>
+      <button data-action="rename">이름 변경</button>
+      <button data-action="remove" class="danger">제거</button>
+    </div>
+
+    <!-- Workspace Context Menu -->
+    <div class="context-menu" id="ws-context-menu">
+      <button data-action="rename-ws">이름 변경</button>
+      <button data-action="delete-ws" class="danger">삭제</button>
+    </div>
+  </div>
+
+  <script src="renderer.js"></script>
+</body>
+</html>

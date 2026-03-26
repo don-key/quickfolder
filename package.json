@@ -1,0 +1,23 @@
+{
+  "name": "quickfolder",
+  "version": "1.0.0",
+  "description": "macOS 폴더 관리 유틸리티 - 빠른 폴더 접근",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "build": "electron-builder --mac"
+  },
+  "devDependencies": {
+    "electron": "^33.0.0",
+    "electron-builder": "^25.0.0"
+  },
+  "build": {
+    "appId": "com.quickfolder.app",
+    "productName": "QuickFolder",
+    "mac": {
+      "category": "public.app-category.utilities",
+      "icon": "icons/icon.icns",
+      "target": "dmg"
+    }
+  }
+}
