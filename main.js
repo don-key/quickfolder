@@ -43,10 +43,11 @@ function startEdgeAndAutoHide() {
     const display = screen.getDisplayNearestPoint(point);
     const topEdge = display.bounds.y;
     const inCooldown = (now - lastShowTime) < SHOW_COOLDOWN;
-    const isVisible = mainWindow.isVisible() && !mainWindow.isMinimized();
+    const bounds = mainWindow.getBounds();
+    const isOnScreen = bounds.x > -9999;
 
-    // ── 1) Hot Edge: 창이 안 보이면 상단 감지 후 열기 ──
-    if (!isVisible) {
+    // ── 1) Hot Edge: 창이 화면 밖이면 상단 감지 후 열기 ──
+    if (!isOnScreen) {
       if (point.y <= topEdge + EDGE_THRESHOLD) {
         if (hoverStart === 0) {
           hoverStart = now;
@@ -64,7 +65,6 @@ function startEdgeAndAutoHide() {
     // ── 2) Auto-Hide: 창이 보이면 마우스 이탈 시 숨기기 ──
     if (isPinned || inCooldown) return;
 
-    const bounds = mainWindow.getBounds();
     const inside =
       point.x >= bounds.x - HIDE_MARGIN &&
       point.x <= bounds.x + bounds.width + HIDE_MARGIN &&
@@ -72,7 +72,8 @@ function startEdgeAndAutoHide() {
       point.y <= bounds.y + bounds.height + HIDE_MARGIN;
 
     if (!inside) {
-      mainWindow.hide();
+      mainWindow.setPosition(-10000, -10000);
+      mainWindow.showInactive();
     }
   }, 100);
 }
@@ -122,8 +123,10 @@ function createTray() {
   ]);
 
   tray.on('click', () => {
-    if (mainWindow.isVisible() && !mainWindow.isMinimized()) {
-      mainWindow.hide();
+    const b = mainWindow.getBounds();
+    if (b.x > -9999) {
+      mainWindow.setPosition(-10000, -10000);
+      mainWindow.showInactive();
     } else {
       showWindow();
     }
@@ -162,17 +165,19 @@ function createWindow() {
     mainWindow.show();
   });
 
-  // Hide instead of close (keeps running in tray)
+  // Move off-screen instead of hide (keeps app in Cmd+Tab)
   mainWindow.on('close', (e) => {
     if (!app.isQuitting) {
       e.preventDefault();
-      mainWindow.hide();
+      mainWindow.setPosition(-10000, -10000);
+      mainWindow.showInactive();
     }
   });
 }
 
 // ── App Lifecycle ──
 app.whenReady().then(() => {
+  if (app.dock) app.dock.show();
   createWindow();
   createTray();
   startEdgeAndAutoHide();
@@ -192,6 +197,15 @@ app.on('activate', () => {
     showWindow();
   } else {
     createWindow();
+  }
+});
+
+// Cmd+Tab 등 모든 앱 활성화 방식에 반응 (macOS 전용)
+app.on('did-become-active', () => {
+  if (!mainWindow) return;
+  const bounds = mainWindow.getBounds();
+  if (bounds.x <= -9999) {
+    showWindow();
   }
 });
 
