@@ -1,6 +1,48 @@
-const { app, BrowserWindow, ipcMain, dialog, shell, Tray, Menu, nativeImage, screen } = require('electron');
+const { app, BrowserWindow, ipcMain, dialog, shell, Tray, Menu, nativeImage, screen, Notification } = require('electron');
 const path = require('path');
 const fs = require('fs');
+const https = require('https');
+
+const CURRENT_VERSION = require('./package.json').version;
+const GITHUB_REPO = 'don-key/quickfolder';
+
+// ── Auto Update Check ──
+function checkForUpdates(silent = true) {
+  const options = {
+    hostname: 'api.github.com',
+    path: `/repos/${GITHUB_REPO}/releases/latest`,
+    headers: { 'User-Agent': 'QuickFolder' }
+  };
+
+  https.get(options, (res) => {
+    let data = '';
+    res.on('data', (chunk) => data += chunk);
+    res.on('end', () => {
+      try {
+        const release = JSON.parse(data);
+        const latest = release.tag_name.replace('v', '');
+        if (latest !== CURRENT_VERSION) {
+          const body = release.body || '';
+          const notification = new Notification({
+            title: `QuickFolder ${latest} 업데이트 available`,
+            body: body.slice(0, 200).replace(/[#*`]/g, ''),
+            icon: path.join(__dirname, 'icons', 'icon.png')
+          });
+          notification.on('click', () => {
+            shell.openExternal(`https://github.com/${GITHUB_REPO}/releases/tag/v${latest}`);
+          });
+          notification.show();
+        } else if (!silent) {
+          new Notification({
+            title: 'QuickFolder',
+            body: '최신 버전을 사용 중입니다.',
+            icon: path.join(__dirname, 'icons', 'icon.png')
+          }).show();
+        }
+      } catch {}
+    });
+  }).on('error', () => {});
+}
 
 const DATA_PATH = path.join(app.getPath('userData'), 'quickfolder-data.json');
 
@@ -118,6 +160,7 @@ function createTray() {
 
   const contextMenu = Menu.buildFromTemplate([
     { label: 'QuickFolder 열기', click: () => showWindow() },
+    { label: '업데이트 확인', click: () => checkForUpdates(false) },
     { type: 'separator' },
     { label: '종료', click: () => { app.isQuitting = true; app.quit(); } }
   ]);
@@ -181,6 +224,8 @@ app.whenReady().then(() => {
   createWindow();
   createTray();
   startEdgeAndAutoHide();
+  // 앱 시작 5초 후 업데이트 체크
+  setTimeout(() => checkForUpdates(true), 5000);
 });
 
 app.on('before-quit', () => {
