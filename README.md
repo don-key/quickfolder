@@ -59,6 +59,14 @@ brew install --cask quickfolder
 3. `QuickFolder`를 `Applications` 폴더로 드래그
 4. 실행!
 
+### macOS 보안 경고 해결
+
+코드사이닝이 없어 "손상되었기 때문에 열 수 없습니다" 경고가 뜰 수 있습니다. 아래 명령어로 해제하세요:
+
+```bash
+xattr -cr /Applications/QuickFolder.app
+```
+
 
 ### 소스에서 실행 (개발자용)
 
