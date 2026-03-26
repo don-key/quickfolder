@@ -154,10 +154,10 @@ function showWindowAtCursor(point, display) {
   let x = Math.round(point.x - windowBounds.width / 2);
   x = Math.max(area.x, Math.min(x, area.x + area.width - windowBounds.width));
 
-  // 전체화면 앱 위에도 표시되도록 레벨 설정
   mainWindow.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true });
   if (!isPinned) mainWindow.setAlwaysOnTop(true, 'screen-saver');
-  mainWindow.setPosition(x, area.y);
+  // 먼저 위치 설정 후 show (디스플레이 이동 보장)
+  mainWindow.setBounds({ x, y: area.y, width: windowBounds.width, height: windowBounds.height });
   mainWindow.showInactive();
 }
 
