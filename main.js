@@ -104,7 +104,8 @@ function startEdgeAndAutoHide() {
     }
 
     // ── 2) Auto-Hide: 창이 보이면 마우스 이탈 시 숨기기 ──
-    if (isPinned || inCooldown) return;
+    // 포커스 상태(사용자가 직접 조작 중)면 auto-hide 안 함
+    if (isPinned || inCooldown || mainWindow.isFocused()) return;
 
     const bounds = mainWindow.getBounds();
     const inside =
