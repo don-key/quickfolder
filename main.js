@@ -66,6 +66,8 @@ function saveData(data) {
 let mainWindow;
 let tray;
 let isPinned = false;
+let isDragging = false;
+let dragEndTimer = null;
 
 // ── Hot Edge + Auto-Hide 통합 관리 ──
 let edgeTimer = null;
@@ -105,7 +107,7 @@ function startEdgeAndAutoHide() {
 
     // ── 2) Auto-Hide: 창이 보이면 마우스 이탈 시 숨기기 ──
     // 포커스 상태(사용자가 직접 조작 중)면 auto-hide 안 함
-    if (isPinned || inCooldown || mainWindow.isFocused()) return;
+    if (isPinned || inCooldown || isDragging || mainWindow.isFocused()) return;
 
     const bounds = mainWindow.getBounds();
     const inside =
@@ -129,8 +131,7 @@ function showWindowAtCursor(point, display) {
   x = Math.max(area.x, Math.min(x, area.x + area.width - windowBounds.width));
 
   mainWindow.setPosition(x, area.y);
-  mainWindow.show();
-  mainWindow.focus();
+  mainWindow.showInactive();
 }
 
 function showWindow() {
@@ -200,6 +201,20 @@ function createWindow() {
   });
 
   mainWindow.loadFile('index.html');
+
+  // ── 드래그 중 auto-hide 방지 ──
+  mainWindow.on('will-move', () => {
+    isDragging = true;
+    if (dragEndTimer) clearTimeout(dragEndTimer);
+  });
+
+  mainWindow.on('moved', () => {
+    if (dragEndTimer) clearTimeout(dragEndTimer);
+    dragEndTimer = setTimeout(() => {
+      isDragging = false;
+      lastShowTime = Date.now(); // 드래그 끝난 후 쿨다운 재적용
+    }, 300);
+  });
 
   mainWindow.once('ready-to-show', () => {
     lastShowTime = Date.now();
