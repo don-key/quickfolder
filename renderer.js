@@ -11,10 +11,6 @@ const modalTitle = document.getElementById('modal-title');
 const modalInput = document.getElementById('modal-input');
 const modalCancel = document.getElementById('modal-cancel');
 const modalConfirm = document.getElementById('modal-confirm');
-const contextMenu = document.getElementById('context-menu');
-const wsContextMenu = document.getElementById('ws-context-menu');
-
-let contextTarget = null;
 let modalCallback = null;
 
 // Initialize
@@ -166,84 +162,63 @@ window.openFolder = (path) => {
 // Context menu for folders
 window.showContextMenu = (e, index) => {
   e.preventDefault();
-  contextTarget = { type: 'folder', index };
-  hideAllMenus();
-  contextMenu.style.left = e.clientX + 'px';
-  contextMenu.style.top = e.clientY + 'px';
-  contextMenu.classList.add('visible');
+  e.stopPropagation();
+  window.api.showFolderMenu(index);
 };
 
-// Context menu for workspaces
 window.showWsContextMenu = (e, wsId) => {
   e.preventDefault();
   e.stopPropagation();
   if (data.workspaces.length <= 1 && wsId === data.workspaces[0]?.id) return;
-  contextTarget = { type: 'workspace', wsId };
-  hideAllMenus();
-  wsContextMenu.style.left = e.clientX + 'px';
-  wsContextMenu.style.top = e.clientY + 'px';
-  wsContextMenu.classList.add('visible');
+  window.api.showWsMenu(wsId);
 };
 
-function hideAllMenus() {
-  contextMenu.classList.remove('visible');
-  wsContextMenu.classList.remove('visible');
-}
+// Native context menu actions (from main process)
+window.api.onFolderAction(async ({ action, index }) => {
+  const ws = activeWs();
+  const folder = ws.folders[index];
+  if (!folder) return;
 
-// Context menu actions
-contextMenu.querySelectorAll('button').forEach(btn => {
-  btn.addEventListener('click', async () => {
-    const action = btn.dataset.action;
-    const ws = activeWs();
-    const folder = ws.folders[contextTarget.index];
-
-    if (action === 'open') {
-      window.api.openFolder(folder.path);
-    } else if (action === 'terminal') {
-      window.api.openInTerminal(folder.path);
-    } else if (action === 'rename') {
-      showModal('폴더 별명 변경', folder.name, (newName) => {
-        if (newName.trim()) {
-          folder.name = newName.trim();
-          save();
-          render();
-        }
-      });
-    } else if (action === 'remove') {
-      ws.folders.splice(contextTarget.index, 1);
-      await save();
-      render();
-    }
-    hideAllMenus();
-  });
+  if (action === 'open') {
+    window.api.openFolder(folder.path);
+  } else if (action === 'terminal') {
+    window.api.openInTerminal(folder.path);
+  } else if (action === 'rename') {
+    showModal('폴더 별명 변경', folder.name, (newName) => {
+      if (newName.trim()) {
+        folder.name = newName.trim();
+        save();
+        render();
+      }
+    });
+  } else if (action === 'remove') {
+    ws.folders.splice(index, 1);
+    await save();
+    render();
+  }
 });
 
-// Workspace context menu actions
-wsContextMenu.querySelectorAll('button').forEach(btn => {
-  btn.addEventListener('click', async () => {
-    const action = btn.dataset.action;
-    const wsId = contextTarget.wsId;
-    const ws = data.workspaces.find(w => w.id === wsId);
+window.api.onWsAction(async ({ action, wsId }) => {
+  const ws = data.workspaces.find(w => w.id === wsId);
+  if (!ws) return;
 
-    if (action === 'rename-ws') {
-      showModal('워크스페이스 이름 변경', ws.name, (newName) => {
-        if (newName.trim()) {
-          ws.name = newName.trim();
-          save();
-          render();
-        }
-      });
-    } else if (action === 'delete-ws') {
-      if (data.workspaces.length <= 1) return;
-      data.workspaces = data.workspaces.filter(w => w.id !== wsId);
-      if (data.activeWorkspace === wsId) {
-        data.activeWorkspace = data.workspaces[0].id;
+  if (action === 'rename') {
+    showModal('워크스페이스 이름 변경', ws.name, (newName) => {
+      if (newName.trim()) {
+        ws.name = newName.trim();
+        save();
+        render();
       }
-      await save();
-      render();
+    });
+  } else if (action === 'delete') {
+    if (data.workspaces.length <= 1) return;
+    data.workspaces = data.workspaces.filter(w => w.id !== wsId);
+    if (data.activeWorkspace === wsId) {
+      data.activeWorkspace = data.workspaces[0].id;
     }
-    hideAllMenus();
-  });
+    await save();
+    render();
+  }
 });
 
 // Modal
@@ -282,6 +257,11 @@ document.getElementById('btn-github').addEventListener('click', () => {
   window.api.openGithub();
 });
 
+// Version display
+window.api.getVersion().then(({ version, isDev }) => {
+  document.getElementById('app-version').textContent = isDev ? `v${version} (dev)` : `v${version}`;
+});
+
 // Settings button
 document.getElementById('btn-settings').addEventListener('click', () => {
   window.api.openSettings();
@@ -316,15 +296,9 @@ addFolderBtn.addEventListener('click', async () => {
   if (paths.length > 0) addFolders(paths);
 });
 
-// Close menus on click elsewhere
-document.addEventListener('click', () => {
-  hideAllMenus();
-});
-
 // Keyboard shortcut
 document.addEventListener('keydown', (e) => {
   if (e.key === 'Escape') {
-    hideAllMenus();
     hideModal();
   }
 });

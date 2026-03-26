@@ -12,5 +12,10 @@ contextBridge.exposeInMainWorld('api', {
   togglePin: () => ipcRenderer.invoke('toggle-pin'),
   getPinned: () => ipcRenderer.invoke('get-pinned'),
   openSettings: () => ipcRenderer.invoke('open-settings'),
-  openGithub: () => ipcRenderer.invoke('open-github')
+  openGithub: () => ipcRenderer.invoke('open-github'),
+  getVersion: () => ipcRenderer.invoke('get-version'),
+  showFolderMenu: (index) => ipcRenderer.invoke('show-folder-menu', index),
+  showWsMenu: (wsId) => ipcRenderer.invoke('show-ws-menu', wsId),
+  onFolderAction: (cb) => ipcRenderer.on('folder-action', (_, data) => cb(data)),
+  onWsAction: (cb) => ipcRenderer.on('ws-action', (_, data) => cb(data))
 });

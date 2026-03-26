@@ -66,6 +66,21 @@ function saveData(data) {
 let mainWindow;
 let tray;
 let isPinned = false;
+let terminalApp = 'Terminal';
+
+const TERMINAL_OPTIONS = ['Terminal', 'iTerm', 'Warp', 'Alacritty', 'kitty', 'Ghostty'];
+
+function loadTerminalSetting() {
+  const data = loadData();
+  terminalApp = data.terminalApp || 'Terminal';
+}
+
+function saveTerminalSetting(app) {
+  const data = loadData();
+  data.terminalApp = app;
+  saveData(data);
+  terminalApp = app;
+}
 let isDragging = false;
 let dragEndTimer = null;
 
@@ -117,6 +132,7 @@ function startEdgeAndAutoHide() {
       point.y <= bounds.y + bounds.height + HIDE_MARGIN;
 
     if (!inside) {
+      if (!isPinned) mainWindow.setAlwaysOnTop(false);
       mainWindow.hide();
     }
   }, 100);
@@ -130,6 +146,8 @@ function showWindowAtCursor(point, display) {
   let x = Math.round(point.x - windowBounds.width / 2);
   x = Math.max(area.x, Math.min(x, area.x + area.width - windowBounds.width));
 
+  // 전체화면 앱 위에도 표시되도록 레벨 설정
+  if (!isPinned) mainWindow.setAlwaysOnTop(true, 'screen-saver');
   mainWindow.setPosition(x, area.y);
   mainWindow.showInactive();
 }
@@ -141,6 +159,7 @@ function showWindow() {
   const { x, y, width } = display.workArea;
   const windowBounds = mainWindow.getBounds();
 
+  if (!isPinned) mainWindow.setAlwaysOnTop(true, 'screen-saver');
   mainWindow.setPosition(
     Math.round(x + (width - windowBounds.width) / 2),
     y
@@ -148,6 +167,8 @@ function showWindow() {
   lastShowTime = Date.now();
   mainWindow.show();
   mainWindow.focus();
+  // 포커스 후 레벨 복원 (핀 아닐 때)
+  if (!isPinned) setTimeout(() => mainWindow.setAlwaysOnTop(false), 100);
 }
 
 // ── Tray ──
@@ -162,6 +183,13 @@ function createTray() {
   const contextMenu = Menu.buildFromTemplate([
     { label: 'QuickFolder 열기', click: () => showWindow() },
     { label: '업데이트 확인', click: () => checkForUpdates(false) },
+    { type: 'separator' },
+    { label: '기본 터미널', submenu: TERMINAL_OPTIONS.map(t => ({
+      label: t,
+      type: 'radio',
+      checked: t === terminalApp,
+      click: () => saveTerminalSetting(t)
+    }))},
     { type: 'separator' },
     { label: '종료', click: () => { app.isQuitting = true; app.quit(); } }
   ]);
@@ -193,6 +221,8 @@ function createWindow() {
     icon: path.join(__dirname, 'icons', 'icon.png'),
     show: false,
     skipTaskbar: false,
+    visibleOnAllWorkspaces: true,
+    fullscreenable: false,
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
       contextIsolation: true,
@@ -233,6 +263,7 @@ function createWindow() {
 // ── App Lifecycle ──
 app.whenReady().then(() => {
   if (app.dock) app.dock.show();
+  loadTerminalSetting();
   createWindow();
   createTray();
   startEdgeAndAutoHide();
@@ -305,8 +336,8 @@ ipcMain.handle('open-folder', (_, folderPath) => {
 });
 
 ipcMain.handle('open-in-terminal', (_, folderPath) => {
-  const terminalScript = `tell application "Terminal" to do script "cd '${folderPath.replace(/'/g, "'\\''")}'"\ntell application "Terminal" to activate`;
-  require('child_process').exec(`osascript -e '${terminalScript.replace(/'/g, "'\\''")}'`);
+  const escaped = folderPath.replace(/"/g, '\\"');
+  require('child_process').exec(`open -a "${terminalApp}" "${escaped}"`);
 });
 
 ipcMain.handle('get-folder-info', (_, folderPath) => {
@@ -361,10 +392,46 @@ ipcMain.handle('toggle-pin', () => {
 
 ipcMain.handle('get-pinned', () => isPinned);
 
+ipcMain.handle('show-folder-menu', (_, index) => {
+  const menu = Menu.buildFromTemplate([
+    { label: 'Finder에서 열기', click: () => mainWindow.webContents.send('folder-action', { action: 'open', index }) },
+    { label: '터미널에서 열기', click: () => mainWindow.webContents.send('folder-action', { action: 'terminal', index }) },
+    { type: 'separator' },
+    { label: '이름 변경', click: () => mainWindow.webContents.send('folder-action', { action: 'rename', index }) },
+    { label: '제거', click: () => mainWindow.webContents.send('folder-action', { action: 'remove', index }) }
+  ]);
+  menu.popup({ window: mainWindow });
+});
+
+ipcMain.handle('show-ws-menu', (_, wsId) => {
+  const menu = Menu.buildFromTemplate([
+    { label: '이름 변경', click: () => mainWindow.webContents.send('ws-action', { action: 'rename', wsId }) },
+    { label: '삭제', click: () => mainWindow.webContents.send('ws-action', { action: 'delete', wsId }) }
+  ]);
+  menu.popup({ window: mainWindow });
+});
+
+ipcMain.handle('get-version', () => ({
+  version: CURRENT_VERSION,
+  isDev: !app.isPackaged
+}));
+
 ipcMain.handle('open-github', () => {
   shell.openExternal('https://github.com/don-key/quickfolder');
 });
 
 ipcMain.handle('open-settings', () => {
-  require('child_process').exec('open "x-apple.systempreferences:com.apple.preference.security?Privacy_Automation"');
+  const menu = Menu.buildFromTemplate([
+    { label: '기본 터미널', submenu: TERMINAL_OPTIONS.map(t => ({
+      label: t,
+      type: 'radio',
+      checked: t === terminalApp,
+      click: () => saveTerminalSetting(t)
+    }))},
+    { type: 'separator' },
+    { label: '자동화 권한 설정', click: () => {
+      require('child_process').exec('open "x-apple.systempreferences:com.apple.preference.security?Privacy_Automation"');
+    }}
+  ]);
+  menu.popup({ window: mainWindow });
 });

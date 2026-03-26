@@ -16,6 +16,7 @@
         <div class="header-title">
           <span class="app-name">QuickFolder</span>
           <span class="app-desc">폴더를 한 곳에서 관리</span>
+          <span class="app-version" id="app-version"></span>
         </div>
         <div class="header-actions">
           <button class="btn-icon btn-sm" id="btn-github" title="GitHub Star">
@@ -72,20 +73,6 @@
       </div>
     </div>
 
-    <!-- Context Menu -->
-    <div class="context-menu" id="context-menu">
-      <button data-action="open">Finder에서 열기</button>
-      <button data-action="terminal">터미널에서 열기</button>
-      <div class="context-divider"></div>
-      <button data-action="rename">이름 변경</button>
-      <button data-action="remove" class="danger">제거</button>
-    </div>
-
-    <!-- Workspace Context Menu -->
-    <div class="context-menu" id="ws-context-menu">
-      <button data-action="rename-ws">이름 변경</button>
-      <button data-action="delete-ws" class="danger">삭제</button>
-    </div>
   </div>
 
   <script src="renderer.js"></script>
