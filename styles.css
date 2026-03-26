@@ -47,7 +47,7 @@ body {
 
 /* Header */
 .header {
-  padding: 16px 20px 8px;
+  padding: 6px 12px 4px;
   flex-shrink: 0;
 }
 
@@ -57,9 +57,31 @@ body {
   justify-content: space-between;
 }
 
+.header-title {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+}
+
+.app-name {
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: -0.3px;
+}
+
+.app-desc {
+  font-size: 11px;
+  color: var(--text-secondary);
+}
+
 .header-actions {
   display: flex;
-  gap: 6px;
+  gap: 4px;
+}
+
+.btn-sm {
+  width: 24px;
+  height: 24px;
 }
 
 #btn-pin.pinned {
@@ -76,24 +98,12 @@ body {
   transform: rotate(45deg);
 }
 
-.header h1 {
-  font-size: 22px;
-  font-weight: 700;
-  letter-spacing: -0.3px;
-}
-
-.subtitle {
-  font-size: 13px;
-  color: var(--text-secondary);
-  margin-top: 2px;
-}
-
 /* Workspace Bar */
 .workspace-bar {
   display: flex;
   align-items: center;
-  padding: 8px 20px;
-  gap: 6px;
+  padding: 4px 12px;
+  gap: 4px;
   flex-shrink: 0;
 }
 
@@ -182,14 +192,18 @@ body {
 /* Folder List */
 .folder-list {
   flex: 1;
-  overflow-y: auto;
+  display: flex;
+  flex-wrap: wrap;
+  align-content: flex-start;
+  gap: 4px;
   padding: 4px 12px;
+  overflow-y: auto;
   scrollbar-width: thin;
   scrollbar-color: var(--bg-tertiary) transparent;
 }
 
 .folder-list::-webkit-scrollbar {
-  width: 6px;
+  width: 4px;
 }
 
 .folder-list::-webkit-scrollbar-track {
@@ -198,91 +212,54 @@ body {
 
 .folder-list::-webkit-scrollbar-thumb {
   background: var(--bg-tertiary);
-  border-radius: 3px;
+  border-radius: 2px;
 }
 
 .folder-item {
-  display: flex;
+  display: inline-flex;
   align-items: center;
-  padding: 10px 12px;
-  border-radius: var(--radius-sm);
+  padding: 5px 10px;
+  border-radius: 16px;
+  border: 1px solid var(--border);
+  background: var(--bg-secondary);
   cursor: pointer;
-  transition: background 0.12s ease;
-  gap: 10px;
+  transition: all 0.12s ease;
+  gap: 5px;
 }
 
 .folder-item:hover {
-  background: var(--bg-secondary);
+  background: var(--bg-tertiary);
+  border-color: var(--accent);
 }
 
 .folder-item:active {
-  background: var(--bg-tertiary);
+  background: var(--accent);
 }
 
-.folder-icon {
-  width: 36px;
-  height: 36px;
-  border-radius: 8px;
-  background: linear-gradient(135deg, #2f81f7, #1f6feb);
-  display: flex;
-  align-items: center;
-  justify-content: center;
+.folder-item-icon {
+  width: 14px;
+  height: 14px;
   flex-shrink: 0;
+  color: var(--accent);
 }
 
-.folder-icon svg {
-  width: 20px;
-  height: 20px;
-  color: white;
-}
-
-.folder-info {
-  flex: 1;
-  min-width: 0;
+.folder-item:hover .folder-item-icon {
+  color: var(--accent-hover);
 }
 
 .folder-name {
-  font-size: 14px;
+  font-size: 12px;
   font-weight: 500;
   white-space: nowrap;
+  max-width: 120px;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 
-.folder-path {
-  font-size: 11px;
+.empty-hint {
+  font-size: 12px;
   color: var(--text-secondary);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  margin-top: 1px;
-}
-
-.folder-meta {
-  font-size: 11px;
-  color: var(--text-secondary);
-  flex-shrink: 0;
-  text-align: right;
-}
-
-.empty-state {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  padding: 40px 20px;
-  color: var(--text-secondary);
-  text-align: center;
-  gap: 8px;
-}
-
-.empty-state svg {
-  opacity: 0.3;
-  margin-bottom: 4px;
-}
-
-.empty-state p {
-  font-size: 14px;
+  padding: 6px 0;
 }
 
 /* Modal */

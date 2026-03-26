@@ -44,10 +44,6 @@ function shortenPath(folderPath) {
 function render() {
   renderWorkspaceTabs();
   renderFolderList();
-  // Dynamically resize window based on folder count
-  const ws = activeWs();
-  const count = ws ? ws.folders.length : 0;
-  window.api.resizeWindow(count);
 }
 
 function renderWorkspaceTabs() {
@@ -123,32 +119,18 @@ function renderWorkspaceTabs() {
 function renderFolderList() {
   const ws = activeWs();
   if (!ws || ws.folders.length === 0) {
-    folderList.innerHTML = `
-      <div class="empty-state">
-        <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" opacity="0.3">
-          <path d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"/>
-        </svg>
-        <p>폴더가 없습니다</p>
-        <p style="font-size:12px">아래에서 폴더를 추가하세요</p>
-      </div>
-    `;
+    folderList.innerHTML = `<span class="empty-hint">폴더를 추가하세요</span>`;
     return;
   }
 
   folderList.innerHTML = ws.folders.map((f, i) => `
     <div class="folder-item" data-index="${i}" data-path="${f.path}"
-         ondblclick="openFolder('${f.path.replace(/'/g, "\\'")}')"
+         onclick="openFolder('${f.path.replace(/'/g, "\\'")}')"
          oncontextmenu="showContextMenu(event, ${i})">
-      <div class="folder-icon">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-          <path d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"/>
-        </svg>
-      </div>
-      <div class="folder-info">
-        <div class="folder-name">${f.name}</div>
-        <div class="folder-path">${shortenPath(f.path)}</div>
-      </div>
-      <div class="folder-meta">${f.itemCount != null ? f.itemCount + '개' : ''}</div>
+      <svg class="folder-item-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+        <path d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"/>
+      </svg>
+      <span class="folder-name">${f.name}</span>
     </div>
   `).join('');
 }
@@ -293,6 +275,16 @@ modalInput.addEventListener('keydown', (e) => {
 });
 modalOverlay.addEventListener('click', (e) => {
   if (e.target === modalOverlay) hideModal();
+});
+
+// GitHub button
+document.getElementById('btn-github').addEventListener('click', () => {
+  window.api.openGithub();
+});
+
+// Settings button
+document.getElementById('btn-settings').addEventListener('click', () => {
+  window.api.openSettings();
 });
 
 // Pin toggle

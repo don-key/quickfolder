@@ -23,10 +23,90 @@ function saveData(data) {
 
 let mainWindow;
 let tray;
-let hotEdgeTimer = null;
-let isHotEdgeActive = false;
 let isPinned = false;
 
+// ── Hot Edge + Auto-Hide 통합 관리 ──
+let edgeTimer = null;
+let hoverStart = 0;
+let lastShowTime = 0;
+const EDGE_THRESHOLD = 5;     // 상단에서 5px 이내
+const EDGE_DELAY = 250;       // 250ms 유지 시 트리거
+const SHOW_COOLDOWN = 1500;   // 창 뜬 후 1.5초간 재트리거/자동숨김 방지
+const HIDE_MARGIN = 40;       // 창 주변 여유 마진
+
+function startEdgeAndAutoHide() {
+  edgeTimer = setInterval(() => {
+    if (!mainWindow) return;
+
+    const now = Date.now();
+    const point = screen.getCursorScreenPoint();
+    const display = screen.getDisplayNearestPoint(point);
+    const topEdge = display.bounds.y;
+    const inCooldown = (now - lastShowTime) < SHOW_COOLDOWN;
+    const isVisible = mainWindow.isVisible() && !mainWindow.isMinimized();
+
+    // ── 1) Hot Edge: 창이 안 보이면 상단 감지 후 열기 ──
+    if (!isVisible) {
+      if (point.y <= topEdge + EDGE_THRESHOLD) {
+        if (hoverStart === 0) {
+          hoverStart = now;
+        } else if (now - hoverStart >= EDGE_DELAY) {
+          hoverStart = 0;
+          lastShowTime = now;
+          showWindowAtCursor(point, display);
+        }
+      } else {
+        hoverStart = 0;
+      }
+      return; // 창이 안 보이면 auto-hide 체크 불필요
+    }
+
+    // ── 2) Auto-Hide: 창이 보이면 마우스 이탈 시 숨기기 ──
+    if (isPinned || inCooldown) return;
+
+    const bounds = mainWindow.getBounds();
+    const inside =
+      point.x >= bounds.x - HIDE_MARGIN &&
+      point.x <= bounds.x + bounds.width + HIDE_MARGIN &&
+      point.y >= Math.min(0, bounds.y - HIDE_MARGIN) &&
+      point.y <= bounds.y + bounds.height + HIDE_MARGIN;
+
+    if (!inside) {
+      mainWindow.hide();
+    }
+  }, 100);
+}
+
+function showWindowAtCursor(point, display) {
+  if (mainWindow.isMinimized()) mainWindow.restore();
+  const windowBounds = mainWindow.getBounds();
+  const area = display.workArea;
+
+  let x = Math.round(point.x - windowBounds.width / 2);
+  x = Math.max(area.x, Math.min(x, area.x + area.width - windowBounds.width));
+
+  mainWindow.setPosition(x, area.y);
+  mainWindow.show();
+  mainWindow.focus();
+}
+
+function showWindow() {
+  if (mainWindow.isMinimized()) mainWindow.restore();
+  const point = screen.getCursorScreenPoint();
+  const display = screen.getDisplayNearestPoint(point);
+  const { x, y, width } = display.workArea;
+  const windowBounds = mainWindow.getBounds();
+
+  mainWindow.setPosition(
+    Math.round(x + (width - windowBounds.width) / 2),
+    y
+  );
+  lastShowTime = Date.now();
+  mainWindow.show();
+  mainWindow.focus();
+}
+
+// ── Tray ──
 function createTray() {
   let icon = nativeImage.createFromPath(path.join(__dirname, 'icon-tray.png'));
   icon.setTemplateImage(true);
@@ -42,7 +122,7 @@ function createTray() {
   ]);
 
   tray.on('click', () => {
-    if (mainWindow.isVisible()) {
+    if (mainWindow.isVisible() && !mainWindow.isMinimized()) {
       mainWindow.hide();
     } else {
       showWindow();
@@ -54,74 +134,14 @@ function createTray() {
   });
 }
 
-// Hot edge: show window when mouse reaches top of screen
-function startHotEdge() {
-  const HOT_EDGE_THRESHOLD = 2; // pixels from top
-  const HOT_EDGE_DELAY = 300;   // ms to trigger
-
-  let hoverStart = 0;
-
-  hotEdgeTimer = setInterval(() => {
-    if (!mainWindow) return;
-
-    const point = screen.getCursorScreenPoint();
-    const display = screen.getDisplayNearestPoint(point);
-    const topEdge = display.bounds.y;
-
-    if (point.y <= topEdge + HOT_EDGE_THRESHOLD) {
-      if (!isHotEdgeActive) {
-        if (hoverStart === 0) {
-          hoverStart = Date.now();
-        } else if (Date.now() - hoverStart >= HOT_EDGE_DELAY) {
-          isHotEdgeActive = true;
-          if (!mainWindow.isVisible()) {
-            showWindowAtMouse(point, display);
-          }
-        }
-      }
-    } else {
-      hoverStart = 0;
-      if (isHotEdgeActive && point.y > topEdge + 50) {
-        isHotEdgeActive = false;
-      }
-    }
-  }, 100);
-}
-
-function showWindow() {
-  const point = screen.getCursorScreenPoint();
-  const display = screen.getDisplayNearestPoint(point);
-  const { x, y, width } = display.workArea;
-  const windowBounds = mainWindow.getBounds();
-
-  // Center horizontally on the display where the cursor is
-  mainWindow.setPosition(
-    Math.round(x + (width - windowBounds.width) / 2),
-    y
-  );
-  mainWindow.show();
-  mainWindow.focus();
-}
-
-function showWindowAtMouse(point, display) {
-  const windowBounds = mainWindow.getBounds();
-  const displayBounds = display.workArea;
-
-  // Position window centered on mouse X, at top of screen
-  let x = Math.round(point.x - windowBounds.width / 2);
-  x = Math.max(displayBounds.x, Math.min(x, displayBounds.x + displayBounds.width - windowBounds.width));
-
-  mainWindow.setPosition(x, displayBounds.y);
-  mainWindow.show();
-  mainWindow.focus();
-}
-
+// ── Window ──
 function createWindow() {
   mainWindow = new BrowserWindow({
     width: 480,
-    height: 640,
+    height: 200,
     minWidth: 360,
-    minHeight: 400,
+    minHeight: 150,
+    maxHeight: 250,
     titleBarStyle: 'hiddenInset',
     backgroundColor: '#0d1117',
     vibrancy: 'under-window',
@@ -137,8 +157,8 @@ function createWindow() {
 
   mainWindow.loadFile('index.html');
 
-  // Show window when ready
   mainWindow.once('ready-to-show', () => {
+    lastShowTime = Date.now();
     mainWindow.show();
   });
 
@@ -149,55 +169,18 @@ function createWindow() {
       mainWindow.hide();
     }
   });
-
-  // Hide window when mouse leaves it
-  let mouseLeaveTimer = null;
-  const MOUSE_LEAVE_DELAY = 400; // ms grace period
-
-  function startMouseTracking() {
-    if (mouseLeaveTimer) return;
-    mouseLeaveTimer = setInterval(() => {
-      if (!mainWindow || !mainWindow.isVisible()) {
-        stopMouseTracking();
-        return;
-      }
-      const point = screen.getCursorScreenPoint();
-      const bounds = mainWindow.getBounds();
-      const margin = 20; // px grace area around window
-      const inside =
-        point.x >= bounds.x - margin &&
-        point.x <= bounds.x + bounds.width + margin &&
-        point.y >= bounds.y - margin &&
-        point.y <= bounds.y + bounds.height + margin;
-
-      if (!inside && !isPinned) {
-        mainWindow.hide();
-        isHotEdgeActive = false;
-        stopMouseTracking();
-      }
-    }, MOUSE_LEAVE_DELAY);
-  }
-
-  function stopMouseTracking() {
-    if (mouseLeaveTimer) {
-      clearInterval(mouseLeaveTimer);
-      mouseLeaveTimer = null;
-    }
-  }
-
-  mainWindow.on('show', () => startMouseTracking());
-  mainWindow.on('hide', () => stopMouseTracking());
 }
 
+// ── App Lifecycle ──
 app.whenReady().then(() => {
   createWindow();
   createTray();
-  startHotEdge();
+  startEdgeAndAutoHide();
 });
 
 app.on('before-quit', () => {
   app.isQuitting = true;
-  if (hotEdgeTimer) clearInterval(hotEdgeTimer);
+  if (edgeTimer) clearInterval(edgeTimer);
 });
 
 app.on('window-all-closed', () => {
@@ -206,13 +189,13 @@ app.on('window-all-closed', () => {
 
 app.on('activate', () => {
   if (mainWindow) {
-    mainWindow.show();
+    showWindow();
   } else {
     createWindow();
   }
 });
 
-// IPC Handlers
+// ── IPC Handlers ──
 ipcMain.handle('load-data', () => loadData());
 
 ipcMain.handle('save-data', (_, data) => {
@@ -221,34 +204,42 @@ ipcMain.handle('save-data', (_, data) => {
 });
 
 ipcMain.handle('select-folder', async () => {
+  const wasPinned = isPinned;
+  isPinned = true; // 다이얼로그 열리는 동안 auto-hide 방지
   const result = await dialog.showOpenDialog(mainWindow, {
     properties: ['openDirectory', 'multiSelections']
   });
+  isPinned = wasPinned; // 원래 핀 상태 복원
+  lastShowTime = Date.now(); // 쿨다운 재적용
   if (result.canceled) return [];
   return result.filePaths;
 });
 
 ipcMain.handle('open-folder', (_, folderPath) => {
-  // Open Finder on the same display as the QuickFolder window
   const winBounds = mainWindow.getBounds();
   const display = screen.getDisplayNearestPoint({ x: winBounds.x, y: winBounds.y });
   const { x, y, width, height } = display.workArea;
 
-  // Use AppleScript to open folder in Finder and position it on the same display
   const finderW = Math.min(800, width - 100);
   const finderH = Math.min(500, height - 100);
   const finderX = x + Math.round((width - finderW) / 2);
   const finderY = y + Math.round((height - finderH) / 2);
 
-  const script = `
-    tell application "Finder"
-      activate
-      set targetFolder to POSIX file "${folderPath.replace(/"/g, '\\"')}" as alias
-      set newWindow to make new Finder window to targetFolder
-      set bounds of newWindow to {${finderX}, ${finderY}, ${finderX + finderW}, ${finderY + finderH}}
-    end tell
-  `;
-  require('child_process').exec(`osascript -e '${script.replace(/'/g, "'\\''")}'`);
+  const escapedPath = folderPath.replace(/\\/g, '\\\\').replace(/"/g, '\\"');
+  const script = [
+    'tell application "Finder"',
+    `  open (POSIX file "${escapedPath}" as alias)`,
+    `  set bounds of front Finder window to {${finderX}, ${finderY}, ${finderX + finderW}, ${finderY + finderH}}`,
+    '  activate',
+    'end tell'
+  ].join('\n');
+
+  require('child_process').execFile('osascript', ['-e', script], (err) => {
+    if (err) {
+      // AppleScript 실패 시 fallback
+      shell.openPath(folderPath);
+    }
+  });
 });
 
 ipcMain.handle('open-in-terminal', (_, folderPath) => {
@@ -282,10 +273,10 @@ ipcMain.handle('resolve-dropped-paths', (_, paths) => {
 
 ipcMain.handle('resize-window', (_, folderCount) => {
   if (!mainWindow) return;
-  const HEADER_HEIGHT = 38 + 50 + 40; // titlebar + header + workspace tabs
-  const FOLDER_ROW = 56;              // per folder item
-  const EMPTY_STATE = 140;            // empty state height
-  const PADDING = 16;                 // bottom padding
+  const HEADER_HEIGHT = 38 + 50 + 40;
+  const FOLDER_ROW = 56;
+  const EMPTY_STATE = 110;
+  const PADDING = 10;
   const MIN_HEIGHT = 200;
   const MAX_HEIGHT = 800;
 
@@ -307,3 +298,11 @@ ipcMain.handle('toggle-pin', () => {
 });
 
 ipcMain.handle('get-pinned', () => isPinned);
+
+ipcMain.handle('open-github', () => {
+  shell.openExternal('https://github.com/don-key/quickfolder');
+});
+
+ipcMain.handle('open-settings', () => {
+  require('child_process').exec('open "x-apple.systempreferences:com.apple.preference.security?Privacy_Automation"');
+});
