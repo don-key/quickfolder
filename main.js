@@ -88,7 +88,7 @@ let dragEndTimer = null;
 let edgeTimer = null;
 let hoverStart = 0;
 let lastShowTime = 0;
-const EDGE_THRESHOLD = 5;     // 상단에서 5px 이내
+const EDGE_THRESHOLD = 50;    // 상단에서 50px 이내 (전체화면 메뉴바 영역 포함)
 const EDGE_DELAY = 250;       // 250ms 유지 시 트리거
 const SHOW_COOLDOWN = 1500;   // 창 뜬 후 1.5초간 재트리거/자동숨김 방지
 const HIDE_MARGIN = 40;       // 창 주변 여유 마진
@@ -147,6 +147,7 @@ function showWindowAtCursor(point, display) {
   x = Math.max(area.x, Math.min(x, area.x + area.width - windowBounds.width));
 
   // 전체화면 앱 위에도 표시되도록 레벨 설정
+  mainWindow.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true });
   if (!isPinned) mainWindow.setAlwaysOnTop(true, 'screen-saver');
   mainWindow.setPosition(x, area.y);
   mainWindow.showInactive();
@@ -159,6 +160,7 @@ function showWindow() {
   const { x, y, width } = display.workArea;
   const windowBounds = mainWindow.getBounds();
 
+  mainWindow.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true });
   if (!isPinned) mainWindow.setAlwaysOnTop(true, 'screen-saver');
   mainWindow.setPosition(
     Math.round(x + (width - windowBounds.width) / 2),
@@ -167,7 +169,6 @@ function showWindow() {
   lastShowTime = Date.now();
   mainWindow.show();
   mainWindow.focus();
-  // 포커스 후 레벨 복원 (핀 아닐 때)
   if (!isPinned) setTimeout(() => mainWindow.setAlwaysOnTop(false), 100);
 }
 
@@ -215,13 +216,13 @@ function createWindow() {
     minWidth: 360,
     minHeight: 150,
     maxHeight: 250,
+    type: 'panel',
     titleBarStyle: 'hiddenInset',
     backgroundColor: '#0d1117',
     vibrancy: 'under-window',
     icon: path.join(__dirname, 'icons', 'icon.png'),
     show: false,
     skipTaskbar: false,
-    visibleOnAllWorkspaces: true,
     fullscreenable: false,
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
@@ -247,6 +248,7 @@ function createWindow() {
   });
 
   mainWindow.once('ready-to-show', () => {
+    mainWindow.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true });
     lastShowTime = Date.now();
     mainWindow.show();
   });
