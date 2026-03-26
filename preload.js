@@ -7,8 +7,6 @@ contextBridge.exposeInMainWorld('api', {
   openFolder: (path) => ipcRenderer.invoke('open-folder', path),
   openInTerminal: (path) => ipcRenderer.invoke('open-in-terminal', path),
   getFolderInfo: (path) => ipcRenderer.invoke('get-folder-info', path),
-  resolveDroppedPaths: (paths) => ipcRenderer.invoke('resolve-dropped-paths', paths),
-  resizeWindow: (folderCount) => ipcRenderer.invoke('resize-window', folderCount),
   togglePin: () => ipcRenderer.invoke('toggle-pin'),
   getPinned: () => ipcRenderer.invoke('get-pinned'),
   openSettings: () => ipcRenderer.invoke('open-settings'),

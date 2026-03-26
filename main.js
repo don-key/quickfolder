@@ -5,6 +5,7 @@ const https = require('https');
 
 const CURRENT_VERSION = require('./package.json').version;
 const GITHUB_REPO = 'don-key/quickfolder';
+const APP_ICON = path.join(__dirname, 'icons', 'icon.png');
 
 // ── Auto Update Check ──
 function checkForUpdates(silent = true) {
@@ -26,7 +27,7 @@ function checkForUpdates(silent = true) {
           const notification = new Notification({
             title: `QuickFolder ${latest} 업데이트 available`,
             body: body.slice(0, 200).replace(/[#*`]/g, ''),
-            icon: path.join(__dirname, 'icons', 'icon.png')
+            icon: APP_ICON
           });
           notification.on('click', () => {
             shell.openExternal(`https://github.com/${GITHUB_REPO}/releases/tag/v${latest}`);
@@ -36,7 +37,7 @@ function checkForUpdates(silent = true) {
           new Notification({
             title: 'QuickFolder',
             body: '최신 버전을 사용 중입니다.',
-            icon: path.join(__dirname, 'icons', 'icon.png')
+            icon: APP_ICON
           }).show();
         }
       } catch {}
@@ -69,6 +70,13 @@ let isPinned = false;
 let terminalApp = 'Terminal';
 
 const TERMINAL_OPTIONS = ['Terminal', 'iTerm', 'Warp', 'Alacritty', 'kitty', 'Ghostty'];
+
+function buildTerminalSubmenu() {
+  return TERMINAL_OPTIONS.map(t => ({
+    label: t, type: 'radio', checked: t === terminalApp,
+    click: () => saveTerminalSetting(t)
+  }));
+}
 
 function loadTerminalSetting() {
   const data = loadData();
@@ -132,10 +140,10 @@ function startEdgeAndAutoHide() {
       point.y <= bounds.y + bounds.height + HIDE_MARGIN;
 
     if (!inside) {
-      if (!isPinned) mainWindow.setAlwaysOnTop(false);
+      mainWindow.setAlwaysOnTop(false);
       mainWindow.hide();
     }
-  }, 100);
+  }, 200);
 }
 
 function showWindowAtCursor(point, display) {
@@ -185,12 +193,7 @@ function createTray() {
     { label: 'QuickFolder 열기', click: () => showWindow() },
     { label: '업데이트 확인', click: () => checkForUpdates(false) },
     { type: 'separator' },
-    { label: '기본 터미널', submenu: TERMINAL_OPTIONS.map(t => ({
-      label: t,
-      type: 'radio',
-      checked: t === terminalApp,
-      click: () => saveTerminalSetting(t)
-    }))},
+    { label: '기본 터미널', submenu: buildTerminalSubmenu() },
     { type: 'separator' },
     { label: '종료', click: () => { app.isQuitting = true; app.quit(); } }
   ]);
@@ -220,7 +223,7 @@ function createWindow() {
     titleBarStyle: 'hiddenInset',
     backgroundColor: '#0d1117',
     vibrancy: 'under-window',
-    icon: path.join(__dirname, 'icons', 'icon.png'),
+    icon: APP_ICON,
     show: false,
     skipTaskbar: false,
     fullscreenable: false,
@@ -356,33 +359,6 @@ ipcMain.handle('get-folder-info', (_, folderPath) => {
   }
 });
 
-ipcMain.handle('resolve-dropped-paths', (_, paths) => {
-  return paths.filter(p => {
-    try {
-      return fs.statSync(p).isDirectory();
-    } catch {
-      return false;
-    }
-  });
-});
-
-ipcMain.handle('resize-window', (_, folderCount) => {
-  if (!mainWindow) return;
-  const HEADER_HEIGHT = 38 + 50 + 40;
-  const FOLDER_ROW = 56;
-  const EMPTY_STATE = 110;
-  const PADDING = 10;
-  const MIN_HEIGHT = 200;
-  const MAX_HEIGHT = 800;
-
-  const contentHeight = folderCount > 0
-    ? HEADER_HEIGHT + (folderCount * FOLDER_ROW) + PADDING
-    : HEADER_HEIGHT + EMPTY_STATE + PADDING;
-
-  const height = Math.max(MIN_HEIGHT, Math.min(MAX_HEIGHT, contentHeight));
-  const bounds = mainWindow.getBounds();
-  mainWindow.setBounds({ x: bounds.x, y: bounds.y, width: bounds.width, height });
-});
 
 ipcMain.handle('toggle-pin', () => {
   isPinned = !isPinned;
@@ -424,12 +400,7 @@ ipcMain.handle('open-github', () => {
 
 ipcMain.handle('open-settings', () => {
   const menu = Menu.buildFromTemplate([
-    { label: '기본 터미널', submenu: TERMINAL_OPTIONS.map(t => ({
-      label: t,
-      type: 'radio',
-      checked: t === terminalApp,
-      click: () => saveTerminalSetting(t)
-    }))},
+    { label: '기본 터미널', submenu: buildTerminalSubmenu() },
     { type: 'separator' },
     { label: '자동화 권한 설정', click: () => {
       require('child_process').exec('open "x-apple.systempreferences:com.apple.preference.security?Privacy_Automation"');

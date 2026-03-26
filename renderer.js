@@ -32,8 +32,8 @@ function folderName(folderPath) {
   return folderPath.split('/').filter(Boolean).pop() || folderPath;
 }
 
-function shortenPath(folderPath) {
-  return folderPath.replace(/^\/Users\/[^/]+/, '~');
+function escapeHtml(str) {
+  return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 }
 
 // Render
@@ -48,7 +48,7 @@ function renderWorkspaceTabs() {
             data-ws-id="${ws.id}"
             draggable="true"
             oncontextmenu="showWsContextMenu(event, '${ws.id}')">
-      ${ws.name}<span class="count">${ws.folders.length}</span>
+      ${escapeHtml(ws.name)}<span class="count">${ws.folders.length}</span>
     </button>
   `).join('');
 
@@ -126,7 +126,7 @@ function renderFolderList() {
       <svg class="folder-item-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
         <path d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"/>
       </svg>
-      <span class="folder-name">${f.name}</span>
+      <span class="folder-name">${escapeHtml(f.name)}</span>
     </div>
   `).join('');
 }
@@ -139,17 +139,16 @@ async function save() {
 // Add folders
 async function addFolders(paths) {
   const ws = activeWs();
-  for (const p of paths) {
-    if (ws.folders.some(f => f.path === p)) continue;
-    const info = await window.api.getFolderInfo(p);
+  const newPaths = paths.filter(p => !ws.folders.some(f => f.path === p));
+  const infos = await Promise.all(newPaths.map(p => window.api.getFolderInfo(p)));
+  newPaths.forEach((p, i) => {
     ws.folders.push({
       id: genId(),
       name: folderName(p),
       path: p,
-      itemCount: info.itemCount,
-      addedAt: new Date().toISOString()
+      itemCount: infos[i].itemCount
     });
-  }
+  });
   await save();
   render();
 }
