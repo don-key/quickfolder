@@ -10,5 +10,7 @@ contextBridge.exposeInMainWorld('api', {
   resolveDroppedPaths: (paths) => ipcRenderer.invoke('resolve-dropped-paths', paths),
   resizeWindow: (folderCount) => ipcRenderer.invoke('resize-window', folderCount),
   togglePin: () => ipcRenderer.invoke('toggle-pin'),
-  getPinned: () => ipcRenderer.invoke('get-pinned')
+  getPinned: () => ipcRenderer.invoke('get-pinned'),
+  openSettings: () => ipcRenderer.invoke('open-settings'),
+  openGithub: () => ipcRenderer.invoke('open-github')
 });
