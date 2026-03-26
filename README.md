@@ -60,6 +60,14 @@ brew install --cask quickfolder
 3. `QuickFolder`를 `Applications` 폴더로 드래그
 4. 실행!
 
+### 업데이트
+
+```bash
+brew upgrade quickfolder
+```
+
+앱 실행 시 새 버전이 있으면 자동으로 알림이 뜹니다. 트레이 아이콘 우클릭 → "업데이트 확인"으로 수동 확인도 가능합니다.
+
 ### macOS 보안 경고 해결
 
 코드사이닝이 없어 "손상되었기 때문에 열 수 없습니다" 경고가 뜰 수 있습니다. 아래 명령어로 해제하세요:
