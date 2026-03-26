@@ -42,26 +42,23 @@
 
 ## Quick Start
 
-### 1단계: 다운로드
+### DMG 설치 (권장)
+
+1. [**QuickFolder-1.0.0-arm64.dmg**](https://github.com/don-key/quickfolder/releases/latest) 다운로드
+2. DMG 파일 열기
+3. `QuickFolder`를 `Applications` 폴더로 드래그
+4. 실행!
+
+> Apple Silicon (M1/M2/M3/M4) Mac 전용
+
+### 소스에서 실행 (개발자용)
 
 ```bash
 git clone https://github.com/don-key/quickfolder.git
 cd quickfolder
-```
-
-### 2단계: 설치
-
-```bash
 npm install
-```
-
-### 3단계: 실행
-
-```bash
 npm start
 ```
-
-**끝!** QuickFolder가 실행되고 메뉴바에 아이콘이 나타납니다.
 
 ---
 
