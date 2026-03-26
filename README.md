@@ -14,7 +14,6 @@
   <img src="https://img.shields.io/badge/electron-33-47848F?style=flat-square&logo=electron" alt="Electron">
   <img src="https://img.shields.io/badge/license-MIT-green?style=flat-square" alt="MIT License">
   <a href="https://github.com/don-key/quickfolder/stargazers"><img src="https://img.shields.io/github/stars/don-key/quickfolder?style=flat-square" alt="Stars"></a>
-  <a href="https://ko-fi.com/don_key"><img src="https://img.shields.io/badge/Ko--fi-Support-ff5e5b?style=flat-square&logo=ko-fi" alt="Ko-fi"></a>
 </p>
 
 ---
@@ -46,14 +45,20 @@
 
 ## Quick Start
 
-### DMG 설치 (권장)
+### Homebrew (권장)
+
+```bash
+brew tap don-key/quickfolder
+brew install --cask quickfolder
+```
+
+### DMG 설치
 
 1. [**최신 DMG 다운로드**](https://github.com/don-key/quickfolder/releases/latest)
 2. DMG 파일 열기
 3. `QuickFolder`를 `Applications` 폴더로 드래그
 4. 실행!
 
-> Apple Silicon (M1/M2/M3/M4) Mac 전용
 
 ### 소스에서 실행 (개발자용)
 
@@ -95,7 +100,7 @@ npm run build
 
 ## Requirements
 
-- **macOS** 10.15+ (Apple Silicon)
+- **macOS** 10.15+
 - 소스 빌드 시: **Node.js** 18+, **npm** 9+
 
 ---
@@ -103,8 +108,6 @@ npm run build
 ## Support
 
 QuickFolder가 마음에 드셨다면 ⭐ **Star**를 눌러주세요!
-
-<a href="https://ko-fi.com/don_key"><img src="https://ko-fi.com/img/githubbutton_sm.svg" alt="Support on Ko-fi"></a>
 
 ---
 
