@@ -120,7 +120,7 @@ function renderFolderList() {
   }
 
   folderList.innerHTML = ws.folders.map((f, i) => `
-    <div class="folder-item" data-index="${i}" data-path="${f.path}"
+    <div class="folder-item" data-index="${i}" data-path="${f.path}" draggable="true"
          onclick="openFolder('${f.path.replace(/'/g, "\\'")}')"
          oncontextmenu="showContextMenu(event, ${i})">
       <svg class="folder-item-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
@@ -129,6 +129,59 @@ function renderFolderList() {
       <span class="folder-name">${escapeHtml(f.name)}</span>
     </div>
   `).join('');
+
+  // Folder drag & drop reorder
+  let dragSrcIdx = null;
+  folderList.querySelectorAll('.folder-item').forEach(item => {
+    item.addEventListener('dragstart', (e) => {
+      dragSrcIdx = parseInt(item.dataset.index);
+      item.classList.add('dragging');
+      e.dataTransfer.effectAllowed = 'move';
+      e.stopPropagation();
+    });
+
+    item.addEventListener('dragend', () => {
+      item.classList.remove('dragging');
+      wasDragging = dragSrcIdx !== null;
+      dragSrcIdx = null;
+      folderList.querySelectorAll('.folder-item').forEach(el => el.classList.remove('drag-over-left', 'drag-over-right'));
+    });
+
+    item.addEventListener('dragover', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      e.dataTransfer.dropEffect = 'move';
+      const idx = parseInt(item.dataset.index);
+      if (idx === dragSrcIdx) return;
+      const rect = item.getBoundingClientRect();
+      const midX = rect.left + rect.width / 2;
+      item.classList.toggle('drag-over-left', e.clientX < midX);
+      item.classList.toggle('drag-over-right', e.clientX >= midX);
+    });
+
+    item.addEventListener('dragleave', () => {
+      item.classList.remove('drag-over-left', 'drag-over-right');
+    });
+
+    item.addEventListener('drop', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      const toIdx = parseInt(item.dataset.index);
+      if (dragSrcIdx === null || dragSrcIdx === toIdx) return;
+
+      const rect = item.getBoundingClientRect();
+      const midX = rect.left + rect.width / 2;
+      const insertAfter = e.clientX >= midX;
+
+      const [moved] = ws.folders.splice(dragSrcIdx, 1);
+      let newIdx = ws.folders.indexOf(ws.folders[toIdx > dragSrcIdx ? toIdx - 1 : toIdx]);
+      if (insertAfter) newIdx++;
+      ws.folders.splice(newIdx < 0 ? 0 : newIdx, 0, moved);
+
+      save();
+      render();
+    });
+  });
 }
 
 // Save
@@ -154,7 +207,9 @@ async function addFolders(paths) {
 }
 
 // Folder actions
+let wasDragging = false;
 window.openFolder = (path) => {
+  if (wasDragging) { wasDragging = false; return; }
   window.api.openFolder(path);
 };
 

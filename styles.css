@@ -244,6 +244,18 @@ body {
   background: var(--accent);
 }
 
+.folder-item.dragging {
+  opacity: 0.4;
+}
+
+.folder-item.drag-over-left {
+  border-left: 2px solid var(--accent);
+}
+
+.folder-item.drag-over-right {
+  border-right: 2px solid var(--accent);
+}
+
 .folder-item-icon {
   width: 14px;
   height: 14px;
