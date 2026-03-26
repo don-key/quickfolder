@@ -68,6 +68,7 @@ let mainWindow;
 let tray;
 let isPinned = false;
 let terminalApp = 'Terminal';
+let hotEdgeEnabled = true;
 
 const TERMINAL_OPTIONS = ['Terminal', 'iTerm', 'Warp', 'Alacritty', 'kitty', 'Ghostty'];
 
@@ -78,9 +79,10 @@ function buildTerminalSubmenu() {
   }));
 }
 
-function loadTerminalSetting() {
+function loadSettings() {
   const data = loadData();
   terminalApp = data.terminalApp || 'Terminal';
+  hotEdgeEnabled = data.hotEdgeEnabled !== false;
 }
 
 function saveTerminalSetting(app) {
@@ -113,7 +115,7 @@ function startEdgeAndAutoHide() {
     const isVisible = mainWindow.isVisible() && !mainWindow.isMinimized();
 
     // ── 1) Hot Edge: 창이 안 보이면 상단 감지 후 열기 ──
-    if (!isVisible) {
+    if (!isVisible && hotEdgeEnabled) {
       if (point.y <= topEdge + EDGE_THRESHOLD) {
         if (hoverStart === 0) {
           hoverStart = now;
@@ -279,7 +281,7 @@ function createWindow() {
 // ── App Lifecycle ──
 app.whenReady().then(() => {
   if (app.dock) app.dock.show();
-  loadTerminalSetting();
+  loadSettings();
   createWindow();
   createTray();
   startEdgeAndAutoHide();
@@ -453,6 +455,13 @@ ipcMain.handle('open-github', () => {
 
 ipcMain.handle('open-settings', () => {
   const menu = Menu.buildFromTemplate([
+    { label: 'Hot Edge', type: 'checkbox', checked: hotEdgeEnabled, click: () => {
+      hotEdgeEnabled = !hotEdgeEnabled;
+      const d = loadData();
+      d.hotEdgeEnabled = hotEdgeEnabled;
+      saveData(d);
+    }},
+    { type: 'separator' },
     { label: '기본 터미널', submenu: buildTerminalSubmenu() },
     { type: 'separator' },
     { label: '자동화 권한 설정', click: () => {
