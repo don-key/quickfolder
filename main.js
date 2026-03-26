@@ -381,11 +381,26 @@ ipcMain.handle('toggle-pin', () => {
 
 ipcMain.handle('get-pinned', () => isPinned);
 
+const FOLDER_COLORS = [
+  { label: '기본', value: '' },
+  { label: '🔴 빨강', value: '#f85149' },
+  { label: '🟠 주황', value: '#f0883e' },
+  { label: '🟡 노랑', value: '#d29922' },
+  { label: '🟢 초록', value: '#3fb950' },
+  { label: '🔵 파랑', value: '#2f81f7' },
+  { label: '🟣 보라', value: '#a371f7' },
+  { label: '⚪ 회색', value: '#8b949e' },
+];
+
 ipcMain.handle('show-folder-menu', (_, index) => {
   const menu = Menu.buildFromTemplate([
     { label: 'Finder에서 열기', click: () => mainWindow.webContents.send('folder-action', { action: 'open', index }) },
     { label: '터미널에서 열기', click: () => mainWindow.webContents.send('folder-action', { action: 'terminal', index }) },
     { type: 'separator' },
+    { label: '색상', submenu: FOLDER_COLORS.map(c => ({
+      label: c.label,
+      click: () => mainWindow.webContents.send('folder-action', { action: 'color', index, color: c.value })
+    }))},
     { label: '이름 변경', click: () => mainWindow.webContents.send('folder-action', { action: 'rename', index }) },
     { label: '제거', click: () => mainWindow.webContents.send('folder-action', { action: 'remove', index }) }
   ]);

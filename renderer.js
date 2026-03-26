@@ -122,8 +122,9 @@ function renderFolderList() {
   folderList.innerHTML = ws.folders.map((f, i) => `
     <div class="folder-item" data-index="${i}" data-path="${f.path}" draggable="true"
          onclick="openFolder('${f.path.replace(/'/g, "\\'")}')"
-         oncontextmenu="showContextMenu(event, ${i})">
-      <svg class="folder-item-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+         oncontextmenu="showContextMenu(event, ${i})"
+         style="${f.color ? `border-color:${f.color}` : ''}">
+      <svg class="folder-item-icon" viewBox="0 0 24 24" fill="none" stroke="${f.color || 'currentColor'}" stroke-width="1.5">
         <path d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"/>
       </svg>
       <span class="folder-name">${escapeHtml(f.name)}</span>
@@ -228,7 +229,7 @@ window.showWsContextMenu = (e, wsId) => {
 };
 
 // Native context menu actions (from main process)
-window.api.onFolderAction(async ({ action, index }) => {
+window.api.onFolderAction(async ({ action, index, color }) => {
   const ws = activeWs();
   const folder = ws.folders[index];
   if (!folder) return;
@@ -245,6 +246,10 @@ window.api.onFolderAction(async ({ action, index }) => {
         render();
       }
     });
+  } else if (action === 'color') {
+    folder.color = color || '';
+    save();
+    render();
   } else if (action === 'remove') {
     ws.folders.splice(index, 1);
     await save();
